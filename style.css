@@ -278,16 +278,27 @@ html, body {
   transition: top 0.5s ease, left 0.3s ease;
 }
 
-/* Peixes */
+/* Peixes decorativos de fundo */
 .fish {
   position: absolute;
-  font-size: 28px;
   transition: left 2s linear;
-  animation: fish-swim 2s ease-in-out infinite alternate;
+  animation: fish-swim 2.5s ease-in-out infinite alternate;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.4));
 }
 @keyframes fish-swim {
-  0%   { transform: translateY(0); }
-  100% { transform: translateY(-8px); }
+  0%   { transform: translateY(0) scaleX(1); }
+  100% { transform: translateY(-8px) scaleX(1); }
+}
+
+/* Ícone de peixe na tela de resultado */
+#result-icon {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 90px;
+}
+#result-fish-svg {
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
 }
 
 /* ===== STATUS PANEL ===== */
@@ -369,7 +380,7 @@ html, body {
   gap: 20px;
   text-align: center;
 }
-#result-icon { font-size: 80px; }
+/* result-icon agora é controlado pelo bloco acima */
 #result-title { font-size: 1.8rem; font-weight: 800; }
 #result-desc { font-size: 0.95rem; opacity: 0.8; max-width: 280px; }
 
