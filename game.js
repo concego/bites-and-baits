@@ -21,12 +21,54 @@ const Game = (() => {
   let ui = {};
 
   // ── Dados do jogo ─────────────────────────────────────────────────────────
+  //
+  // weight    → probabilidade de aparecer (soma = 1.0)
+  // pull      → força com que o peixe resiste ao puxar (0..10)
+  // pullNeeded→ progresso necessário para capturar (pontos de puxada)
+  // biteWindow→ janela de tempo para dar o shake no BITING (ms)
+  // tiredBase → tempo base para o peixe cansar no REELING (ms)
+  //
   const FISH_TYPES = [
-    { name: 'Lambari',  sprite: 'fish-lambari',  size: 1,   weight: 0.3,  special: false },
-    { name: 'Tilápia',  sprite: 'fish-tilapia',  size: 1.5, weight: 0.5,  special: false },
-    { name: 'Truta',    sprite: 'fish-truta',    size: 2,   weight: 0.15, special: false },
-    { name: 'Dourado',  sprite: 'fish-dourado',  size: 2.5, weight: 0.04, special: true  },
-    { name: 'Pirarucu', sprite: 'fish-pirarucu', size: 4,   weight: 0.01, special: true  },
+    {
+      name: 'Lambari',  sprite: 'fish-lambari',  size: 1,   special: false,
+      weight: 0.40,  // 40% — peixinho comum, aparece o tempo todo
+      pull: 1.5,     // resistência mínima
+      pullNeeded: 40, // captura rápida
+      biteWindow: 4500, // janela generosa pra fisgar
+      tiredBase: 3000,  // cansa depressa
+    },
+    {
+      name: 'Tilápia',  sprite: 'fish-tilapia',  size: 1.5, special: false,
+      weight: 0.35,  // 35%
+      pull: 3,
+      pullNeeded: 60,
+      biteWindow: 3500,
+      tiredBase: 4500,
+    },
+    {
+      name: 'Truta',    sprite: 'fish-truta',    size: 2,   special: false,
+      weight: 0.14,  // 14%
+      pull: 5,
+      pullNeeded: 80,
+      biteWindow: 3000,
+      tiredBase: 6000,
+    },
+    {
+      name: 'Dourado',  sprite: 'fish-dourado',  size: 2.5, special: true,
+      weight: 0.08,  // 8% — raro mas encontrável
+      pull: 7,
+      pullNeeded: 110,
+      biteWindow: 2500, // janela menor — reage mais rápido
+      tiredBase: 9000,
+    },
+    {
+      name: 'Pirarucu', sprite: 'fish-pirarucu', size: 4,   special: true,
+      weight: 0.03,  // 3% — boss épico, raro mas possível
+      pull: 10,
+      pullNeeded: 150, // demanda muita puxada
+      biteWindow: 2000, // janelinha — morde e escapa rápido
+      tiredBase: 14000, // aguenta muito antes de cansar
+    },
   ];
 
   let state            = 'IDLE';
@@ -181,7 +223,7 @@ const Game = (() => {
       case 'BITING':
         // TalkBack ainda mudo — TTS assume os avisos
         currentFish = pickFish();
-        fishPull = currentFish.size * 8;
+        fishPull = currentFish.pull;   // ← força real do perfil do peixe
         fishTired = false;
 
         Audio.chomp();
@@ -199,7 +241,7 @@ const Game = (() => {
           speak('Fugiu.');
           setLabel('😔 O peixe fugiu...');
           setTimeout(() => enterState('WAITING'), 1500);
-        }, 3500);
+        }, currentFish.biteWindow);   // ← janela por espécie
         break;
 
       case 'REELING':
@@ -324,11 +366,11 @@ const Game = (() => {
       const delta = fishForce * 0.05;
       tension = Math.min(100, tension + delta);
 
-      // Peixe resistindo: tensão subindo rápido → som grave + carretel neutro
-      if (delta > 0.6 && _resistCooldown <= 0 && !fishTired) {
+      // Peixe resistindo: pull >= 5 (Truta, Dourado, Pirarucu) → som grave
+      if (fishPull >= 5 && delta > 0.2 && _resistCooldown <= 0 && !fishTired) {
         Audio.fishResist();
         Audio.setReelMode('neutral');
-        _resistCooldown = 8; // espera ~1s antes de repetir
+        _resistCooldown = 8;
       }
       if (_resistCooldown > 0) _resistCooldown--;
 
@@ -374,8 +416,8 @@ const Game = (() => {
     tension = Math.min(100, tension + amount * 0.4);
     updateTensionBar();
 
-    // Capturado quando progresso >= 100
-    if (_pullProgress >= 100) {
+    // Capturado quando progresso >= pullNeeded do perfil do peixe
+    if (_pullProgress >= currentFish.pullNeeded) {
       clearInterval(tensionLoop);
       enterState('CAUGHT');
     }
@@ -394,8 +436,9 @@ const Game = (() => {
 
   // ── Cansaço do peixe ──────────────────────────────────────────────────────
   function scheduleFishTired() {
-    // Peixes maiores demoram mais para cansar
-    const ms = 5000 + currentFish.size * 3000;
+    // Cada espécie tem seu próprio tiredBase — pirarucu aguenta muito mais que lambari
+    const jitter = (Math.random() * 0.3 - 0.15); // ±15% de variação
+    const ms = currentFish.tiredBase * (1 + jitter);
     tiredTimer = setTimeout(() => {
       if (state === 'REELING') {
         fishTired = true;
