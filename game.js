@@ -264,7 +264,8 @@ const Game = (() => {
           // Alivia tensão
           releaseLine(1.2);
         } else {
-          // Neutro: tensão cai devagar, peixe pode cansar
+          // Neutro: carretel em tom médio
+          Audio.setReelMode('neutral');
         }
         break;
 
@@ -348,6 +349,10 @@ const Game = (() => {
 
   function pullFish(amount) {
     if (state !== 'REELING') return;
+
+    // Carretel agudo — jogador puxando
+    Audio.setReelMode('pulling');
+
     _pullProgress += amount;
     tension = Math.min(100, tension + amount * 0.4);
     updateTensionBar();
@@ -357,19 +362,17 @@ const Game = (() => {
       clearInterval(tensionLoop);
       enterState('CAUGHT');
     }
-
-    // Carretel em modo pulling enquanto o jogador puxa
-    Audio.setReelMode('pulling');
   }
 
   function releaseLine(amount) {
     if (state !== 'REELING') return;
+
+    // Carretel grave — jogador soltando
+    Audio.setReelMode('releasing');
+
     tension = Math.max(0, tension - amount * 1.5);
     _pullProgress = Math.max(0, _pullProgress - amount * 0.3);
     updateTensionBar();
-
-    // Carretel em modo releasing
-    Audio.setReelMode('releasing');
   }
 
   // ── Cansaço do peixe ──────────────────────────────────────────────────────
