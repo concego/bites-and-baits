@@ -443,3 +443,19 @@ html, body {
   line-height: 1.4;
   opacity: 0.9;
 }
+
+/* ── Créditos no menu ───────────────────────────────────────────────────── */
+.menu-credits {
+  margin-top: auto;
+  padding-top: 16px;
+  text-align: center;
+  font-size: 0.75rem;
+  opacity: 0.5;
+  line-height: 1.6;
+}
+.menu-credits a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.menu-credits a:hover { opacity: 0.8; }
