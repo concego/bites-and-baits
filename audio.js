@@ -9,6 +9,11 @@ const Audio = (() => {
   let ambientNode = null;
   let ambientGain = null;
 
+  // ── Carretel contínuo ──────────────────────────────────────────────────────
+  let reelNode  = null;   // BufferSource em loop
+  let reelGain  = null;   // GainNode do carretel
+  let reelPitch = null;   // playbackRate atual
+
   const FILES = {
     splash:       'assets/sounds/splash.wav',
     bloop:        'assets/sounds/bloop.wav',
@@ -184,7 +189,90 @@ const Audio = (() => {
     ambientNode = null;
   }
 
-  // Vibração do dispositivo
+  // ── Carretel contínuo com pitch variável ───────────────────────────────────
+
+  /**
+   * Inicia o loop do carretel.
+   * mode: 'neutral' | 'pulling' | 'releasing'
+   *   neutral   → playbackRate 1.0  (tom médio, volume baixo)
+   *   pulling   → playbackRate 1.4  (mais agudo — linha saindo rápido)
+   *   releasing → playbackRate 0.65 (mais grave — carretel cedendo)
+   */
+  function startReel(mode = 'neutral') {
+    if (!ctx || !buffers['reel']) return;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    // Já tocando? Só muda o pitch
+    if (reelNode) { setReelMode(mode); return; }
+
+    reelGain        = ctx.createGain();
+    reelGain.gain.value = 0.35;
+    reelGain.connect(ctx.destination);
+
+    reelNode        = ctx.createBufferSource();
+    reelNode.buffer = buffers['reel'];
+    reelNode.loop   = true;
+    reelPitch       = reelNode.playbackRate;
+
+    reelNode.connect(reelGain);
+    reelNode.start();
+
+    setReelMode(mode);
+  }
+
+  function setReelMode(mode) {
+    if (!reelPitch) return;
+    const now = ctx.currentTime;
+    const rates = { neutral: 1.0, pulling: 1.4, releasing: 0.65 };
+    const rate  = rates[mode] ?? 1.0;
+    // Transição suave (40 ms) para não clicar
+    reelPitch.cancelScheduledValues(now);
+    reelPitch.setValueAtTime(reelPitch.value, now);
+    reelPitch.linearRampToValueAtTime(rate, now + 0.04);
+
+    // Volume levemente maior ao puxar
+    if (reelGain) {
+      reelGain.gain.cancelScheduledValues(now);
+      reelGain.gain.setValueAtTime(reelGain.gain.value, now);
+      reelGain.gain.linearRampToValueAtTime(mode === 'pulling' ? 0.5 : 0.3, now + 0.04);
+    }
+  }
+
+  function stopReel() {
+    if (!reelNode) return;
+    // Fade out rápido antes de parar para evitar clique
+    if (reelGain) {
+      const now = ctx.currentTime;
+      reelGain.gain.cancelScheduledValues(now);
+      reelGain.gain.setValueAtTime(reelGain.gain.value, now);
+      reelGain.gain.linearRampToValueAtTime(0, now + 0.08);
+    }
+    const n = reelNode;
+    setTimeout(() => { try { n.stop(); } catch(e) {} }, 100);
+    reelNode  = null;
+    reelGain  = null;
+    reelPitch = null;
+  }
+
+  // ── Resistência do peixe (pulso grave sintético) ───────────────────────────
+  // Chamado quando o peixe puxa forte de volta
+  function fishResist() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(90, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.18);
+    gain.gain.setValueAtTime(0.55, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.22);
+  }
+
+  // ── Vibração do dispositivo ────────────────────────────────────────────────
   function vibrate(pattern) {
     if ('vibrate' in navigator) navigator.vibrate(pattern);
   }
@@ -193,5 +281,6 @@ const Audio = (() => {
   function chomp() { _chomp(); }
   function snap()  { _snap(); }
 
-  return { init, play, stop, startAmbient, stopAmbient, vibrate, chomp, snap };
+  return { init, play, stop, startAmbient, stopAmbient, vibrate, chomp, snap,
+           startReel, setReelMode, stopReel, fishResist };
 })();
