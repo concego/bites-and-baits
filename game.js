@@ -118,6 +118,18 @@ const Game = (() => {
   }
 
   // ── Máquina de estados ────────────────────────────────────────────────────
+  // ── Silencia / restaura o TalkBack via aria-hidden no screen-game ────────────
+  // O #announcer fica FORA do #app, portanto nunca é silenciado.
+  function setTalkbackSilent(silent) {
+    const gameScreen = document.getElementById('screen-game');
+    if (!gameScreen) return;
+    if (silent) {
+      gameScreen.setAttribute('aria-hidden', 'true');
+    } else {
+      gameScreen.removeAttribute('aria-hidden');
+    }
+  }
+
   function enterState(newState) {
     clearTimers();
     state = newState;
@@ -133,19 +145,20 @@ const Game = (() => {
         ui.lure.style.display = 'none';
         ui.line.style.height  = '0px';
         ui.rod.style.transform = 'translateX(-50%) rotate(-30deg)';
+        setTalkbackSilent(false);   // TalkBack volta — isca fora da água
         setLabel('🎣 Pronto para lançar');
         setTiltHint('↕', 'Incline para frente para lançar');
         speak('Pronto para lançar. Incline o celular para frente.');
         break;
 
       case 'CASTING':
+        setTalkbackSilent(true);    // TalkBack mudo — isca entrando na água
         setLabel('🌊 Lançando...');
         setTiltHint('↑', 'Lançando a isca...');
         ui.rod.style.transform = 'translateX(-50%) rotate(10deg)';
         Audio.play('splash') || Audio.play('bloop');
         Audio.play('bloop');
         setTimeout(() => {
-          // Isca cai na água
           ui.lure.style.display = 'block';
           ui.lure.style.top     = '10px';
           ui.lure.style.left    = '50%';
@@ -156,6 +169,7 @@ const Game = (() => {
         break;
 
       case 'WAITING':
+        // TalkBack já está mudo desde CASTING
         setLabel('🌊 Aguardando...');
         setTiltHint('→', 'Segure o celular neutro');
         ui.rod.style.transform = 'translateX(-50%) rotate(-10deg)';
@@ -163,9 +177,9 @@ const Game = (() => {
         break;
 
       case 'BITING':
-        // Escolhe peixe
+        // TalkBack ainda mudo — TTS assume os avisos
         currentFish = pickFish();
-        fishPull = currentFish.size * 8;  // força de arrancada
+        fishPull = currentFish.size * 8;
         fishTired = false;
 
         Audio.chomp();
@@ -178,7 +192,6 @@ const Game = (() => {
         ui.tiltArrow.classList.add('shake-hint');
         speak('Peixe na isca! Sacuda o celular agora para fisgar!', true);
 
-        // Janela de tempo para fisgar
         biteTimer = setTimeout(() => {
           ui.tiltArrow.classList.remove('shake-hint');
           speak('O peixe fugiu. Aguardando novo peixe.', true);
@@ -188,6 +201,7 @@ const Game = (() => {
         break;
 
       case 'REELING':
+        // TalkBack ainda mudo — TTS guia o jogador
         tension = 10;
         ui.tensionCont.classList.remove('hidden');
         ui.rod.style.transform = 'translateX(-50%) rotate(-50deg)';
@@ -195,15 +209,13 @@ const Game = (() => {
         setTiltHint('↓', 'Incline para trás para puxar!');
         _lastTensionWarn = null;
         speak(`Fisgou! Incline para trás para puxar. Cuidado com a tensão da linha!`, true);
-        Audio.startReel('neutral');  // inicia carretel em modo neutro
+        Audio.startReel('neutral');
         startTensionLoop();
-
-        // Inicia contador de cansaço do peixe
         scheduleFishTired();
         break;
 
       case 'CAUGHT':
-        Audio.stopReel();            // para o carretel
+        Audio.stopReel();
         Audio.play(currentFish.special ? 'point_special' : 'point_normal');
         Audio.vibrate([100, 50, 100, 50, 200]);
         score++;
@@ -212,7 +224,7 @@ const Game = (() => {
         ui.tensionCont.classList.add('hidden');
         setLabel(`🏆 ${currentFish.name} capturado!`);
 
-        // TTS com estatísticas completas
+        // TTS fala o resultado — TalkBack ainda mudo
         {
           const sizeDesc = currentFish.size <= 1 ? 'pequeno' :
                            currentFish.size <= 2 ? 'médio' :
@@ -223,14 +235,14 @@ const Game = (() => {
           speak(msg, true);
         }
 
-        // Volta ao IDLE após celebração breve
+        // Volta ao IDLE (TalkBack restaurado lá)
         setTimeout(() => {
           if (state === 'CAUGHT') enterState('IDLE');
         }, 3500);
         break;
 
       case 'SNAPPED':
-        Audio.stopReel();            // para o carretel
+        Audio.stopReel();
         Audio.snap();
         Audio.vibrate([200, 100, 400]);
         ui.tensionCont.classList.add('hidden');
@@ -238,9 +250,12 @@ const Game = (() => {
         ui.lure.style.display = 'none';
         ui.line.style.height  = '0px';
         setLabel('💥 A linha arrebentou!');
-        speak('A linha arrebentou! O peixe escapou. Precisa relançar.', true);
+        speak('A linha arrebentou! O peixe escapou.', true);
         setTimeout(() => {
-          if (state === 'SNAPPED') showResultScreen(false);
+          if (state === 'SNAPPED') {
+            setTalkbackSilent(false);  // TalkBack volta para a tela de resultado
+            showResultScreen(false);
+          }
         }, 2000);
         break;
     }
@@ -454,7 +469,8 @@ const Game = (() => {
   function showResultScreen(caught) {
     Sensors.stop();
     Audio.stopAmbient();
-    Audio.stopReel();   // garante que o carretel para em qualquer saída
+    Audio.stopReel();
+    setTalkbackSilent(false);   // garante que TalkBack está ativo na tela de resultado
     ui.resultScore.textContent = score;
     ui.resultBest.textContent  = best;
     if (caught && currentFish) {
@@ -478,7 +494,8 @@ const Game = (() => {
     clearTimers();
     Sensors.stop();
     Audio.stopAmbient();
-    Audio.stopReel();   // garante que o carretel para ao sair do jogo
+    Audio.stopReel();
+    setTalkbackSilent(false);   // TalkBack volta ao menu
     state = 'IDLE';
     showScreen('start');
   }
