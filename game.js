@@ -20,6 +20,16 @@ const Game = (() => {
   let screens = {};
   let ui = {};
 
+  // ── i18n — aplica strings em todos os elementos data-i18n ─────────────────
+  function applyI18n() {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      const val = I18n.t(key);
+      if (typeof val === 'string') el.textContent = val;
+    });
+    // Nome dos peixes no array (depende do idioma ativo)
+    FISH_TYPES.forEach(f => { f.name = I18n.t(f.nameKey); });
+  }
   // ── Dados do jogo ─────────────────────────────────────────────────────────
   //
   // weight    → probabilidade de aparecer (soma = 1.0)
@@ -30,44 +40,44 @@ const Game = (() => {
   //
   const FISH_TYPES = [
     {
-      name: 'Lambari',  sprite: 'fish-lambari',  size: 1,   special: false,
-      weight: 0.40,  // 40% — peixinho comum, aparece o tempo todo
-      pull: 1.5,     // resistência mínima
-      pullNeeded: 40, // captura rápida
-      biteWindow: 4500, // janela generosa pra fisgar
-      tiredBase: 3000,  // cansa depressa
+      nameKey: 'fish_lambari', name: 'Lambari', sprite: 'fish-lambari', size: 1, special: false,
+      weight: 0.40,
+      pull: 1.5,
+      pullNeeded: 40,
+      biteWindow: 4500,
+      tiredBase: 3000,
     },
     {
-      name: 'Tilápia',  sprite: 'fish-tilapia',  size: 1.5, special: false,
-      weight: 0.35,  // 35%
+      nameKey: 'fish_tilapia', name: 'Tilápia', sprite: 'fish-tilapia', size: 1.5, special: false,
+      weight: 0.35,
       pull: 3,
       pullNeeded: 60,
       biteWindow: 3500,
       tiredBase: 4500,
     },
     {
-      name: 'Truta',    sprite: 'fish-truta',    size: 2,   special: false,
-      weight: 0.14,  // 14%
+      nameKey: 'fish_truta', name: 'Truta', sprite: 'fish-truta', size: 2, special: false,
+      weight: 0.14,
       pull: 5,
       pullNeeded: 80,
       biteWindow: 3000,
       tiredBase: 6000,
     },
     {
-      name: 'Dourado',  sprite: 'fish-dourado',  size: 2.5, special: true,
-      weight: 0.08,  // 8% — raro mas encontrável
+      nameKey: 'fish_dourado', name: 'Dourado', sprite: 'fish-dourado', size: 2.5, special: true,
+      weight: 0.08,
       pull: 7,
       pullNeeded: 110,
-      biteWindow: 2500, // janela menor — reage mais rápido
+      biteWindow: 2500,
       tiredBase: 9000,
     },
     {
-      name: 'Pirarucu', sprite: 'fish-pirarucu', size: 4,   special: true,
-      weight: 0.03,  // 3% — boss épico, raro mas possível
+      nameKey: 'fish_pirarucu', name: 'Pirarucu', sprite: 'fish-pirarucu', size: 4, special: true,
+      weight: 0.03,
       pull: 10,
-      pullNeeded: 150, // demanda muita puxada
-      biteWindow: 2000, // janelinha — morde e escapa rápido
-      tiredBase: 14000, // aguenta muito antes de cansar
+      pullNeeded: 150,
+      biteWindow: 2000,
+      tiredBase: 14000,
     },
   ];
 
@@ -87,8 +97,8 @@ const Game = (() => {
 
   // ── Inicialização ─────────────────────────────────────────────────────────
   function init() {
-    // Resolve referências DOM agora que o DOM está pronto
     screens = {
+      lang:         $('screen-lang'),
       start:        $('screen-start'),
       game:         $('screen-game'),
       result:       $('screen-result'),
@@ -118,7 +128,17 @@ const Game = (() => {
     // Carrega recorde
     ui.best.textContent = best;
 
-    // Botões
+    // ── Seleção de idioma ──────────────────────────────────────────────────
+    // Se já escolheu antes, pula direto pro menu
+    if (I18n.getLang()) {
+      applyI18n();
+      showScreen('start');
+    }
+
+    $('btn-lang-pt').addEventListener('click', () => selectLang('pt'));
+    $('btn-lang-en').addEventListener('click', () => selectLang('en'));
+
+    // ── Botões ─────────────────────────────────────────────────────────────
     $('btn-start').addEventListener('click', startGame);
     $('btn-instructions').addEventListener('click', () => showScreen('instructions'));
     $('btn-back').addEventListener('click',  () => showScreen('start'));
@@ -133,10 +153,15 @@ const Game = (() => {
     Sensors.on('onTilt',  handleTilt);
     Sensors.on('onShake', handleShake);
 
-    // Desktop fallback automático se não há acelerômetro
     if (!window.DeviceOrientationEvent) {
       Sensors.enableDesktopFallback();
     }
+  }
+
+  function selectLang(code) {
+    I18n.setLang(code);
+    applyI18n();
+    showScreen('start');
   }
 
   async function startGame() {
@@ -145,7 +170,7 @@ const Game = (() => {
     // Tenta obter permissão de sensores
     const ok = await Sensors.requestPermission();
     if (!ok) {
-      speak('Permissão de sensores negada. Usando teclado para teste.');
+      speak(I18n.t('speak_no_sensor'));
       Sensors.enableDesktopFallback();
     }
 
@@ -190,15 +215,15 @@ const Game = (() => {
         ui.line.style.height  = '0px';
         ui.rod.style.transform = 'translateX(-50%) rotate(-30deg)';
         setTalkbackSilent(false);   // TalkBack volta — isca fora da água
-        setLabel('🎣 Pronto para lançar');
-        setTiltHint('↕', 'Incline para frente para lançar');
-        speak('Pronto. Incline para frente.');
+        setLabel(I18n.t('state_idle'));
+        setTiltHint('↕', I18n.t('tilt_idle'));
+        speak(I18n.t('speak_ready'));
         break;
 
       case 'CASTING':
         setTalkbackSilent(true);    // TalkBack mudo — isca entrando na água
-        setLabel('🌊 Lançando...');
-        setTiltHint('↑', 'Lançando a isca...');
+        setLabel(I18n.t('state_casting'));
+        setTiltHint('↑', I18n.t('tilt_casting'));
         ui.rod.style.transform = 'translateX(-50%) rotate(10deg)';
         Audio.play('splash') || Audio.play('bloop');
         Audio.play('bloop');
@@ -207,15 +232,15 @@ const Game = (() => {
           ui.lure.style.top     = '10px';
           ui.lure.style.left    = '50%';
           ui.line.style.height  = '80px';
-          speak('Isca na água. Aguarde.');
+          speak(I18n.t('speak_waiting'));
           enterState('WAITING');
         }, 600);
         break;
 
       case 'WAITING':
         // TalkBack já está mudo desde CASTING
-        setLabel('🌊 Aguardando...');
-        setTiltHint('→', 'Segure o celular neutro');
+        setLabel(I18n.t('state_waiting'));
+        setTiltHint('→', I18n.t('tilt_waiting'));
         ui.rod.style.transform = 'translateX(-50%) rotate(-10deg)';
         scheduleNextBite();
         break;
@@ -231,15 +256,15 @@ const Game = (() => {
         ui.scene.classList.add('bite-pulse');
         setTimeout(() => ui.scene.classList.remove('bite-pulse'), 1500);
 
-        setLabel(`⚡ ${currentFish.name} na isca! Dê um shake!`);
-        setTiltHint('📳', 'Sacuda o celular para fisgar!');
+        setLabel(I18n.t('state_biting', currentFish.name));
+        setTiltHint('📳', I18n.t('tilt_biting'));
         ui.tiltArrow.classList.add('shake-hint');
-        speak('Peixe! Sacuda!');
+        speak(I18n.t('speak_fish'));
 
         biteTimer = setTimeout(() => {
           ui.tiltArrow.classList.remove('shake-hint');
-          speak('Fugiu.');
-          setLabel('😔 O peixe fugiu...');
+          speak(I18n.t('speak_escaped'));
+          setLabel(I18n.t('state_escaped'));
           setTimeout(() => enterState('WAITING'), 1500);
         }, currentFish.biteWindow);   // ← janela por espécie
         break;
@@ -249,10 +274,10 @@ const Game = (() => {
         tension = 10;
         ui.tensionCont.classList.remove('hidden');
         ui.rod.style.transform = 'translateX(-50%) rotate(-50deg)';
-        setLabel(`🎣 Puxando ${currentFish.name}...`);
-        setTiltHint('↓', 'Incline para trás para puxar!');
+        setLabel(I18n.t('state_reeling', currentFish.name));
+        setTiltHint('↓', I18n.t('tilt_reeling'));
         _lastTensionWarn = null;
-        speak('Fisgou! Incline para trás!');
+        speak(I18n.t('speak_hooked'));
         Audio.startReel('neutral');
         startTensionLoop();
         scheduleFishTired();
@@ -266,16 +291,16 @@ const Game = (() => {
         if (score > best) { best = score; localStorage.setItem('bb_best', best); }
         updateScore();
         ui.tensionCont.classList.add('hidden');
-        setLabel(`🏆 ${currentFish.name} capturado!`);
+        setLabel(I18n.t('state_caught', currentFish.name));
 
         // TTS fala o resultado — TalkBack ainda mudo
         {
-          const sizeDesc = currentFish.size <= 1 ? 'pequeno' :
-                           currentFish.size <= 2 ? 'médio' :
-                           currentFish.size <= 3 ? 'grande' : 'enorme';
+          const sizeDesc = currentFish.size <= 1 ? I18n.t('size_tiny') :
+                           currentFish.size <= 2 ? I18n.t('size_small') :
+                           currentFish.size <= 3 ? I18n.t('size_medium') : I18n.t('size_large');
           const msg = currentFish.special
-            ? `${currentFish.name}! Especial! ${score} peixes.`
-            : `${currentFish.name}! ${sizeDesc}. ${score} peixes.`;
+            ? I18n.t('speak_caught_special', currentFish.name, score)
+            : I18n.t('speak_caught', currentFish.name, sizeDesc, score);
           speak(msg);
         }
 
@@ -293,8 +318,8 @@ const Game = (() => {
         tension = 0;
         ui.lure.style.display = 'none';
         ui.line.style.height  = '0px';
-        setLabel('💥 A linha arrebentou!');
-        speak('Linha arrebentou!');
+        setLabel(I18n.t('state_snapped'));
+        speak(I18n.t('speak_snapped'));
         setTimeout(() => {
           if (state === 'SNAPPED') {
             setTalkbackSilent(false);  // TalkBack volta para a tela de resultado
@@ -331,8 +356,8 @@ const Game = (() => {
       case 'WAITING':
         // Qualquer inclinação forte pra trás tira a isca da água
         if (dir === 'back') {
-          speak('Relance. Incline para frente.');
-          setLabel('Isca fora da água — incline para frente');
+          speak(I18n.t('speak_pulled_out'));
+          setLabel(I18n.t('state_pulled_out'));
           enterState('IDLE');
         }
         break;
@@ -345,7 +370,7 @@ const Game = (() => {
       clearTimeout(biteTimer);
       ui.tiltArrow.classList.remove('shake-hint');
       Audio.vibrate([50, 30, 50]);
-      speak('Fisgou!');
+      speak(I18n.t('speak_rehooked'));
       enterState('REELING');
     }
   }
@@ -380,13 +405,13 @@ const Game = (() => {
         setTensionClass('tension-danger');
         if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 3000) {
           _lastTensionWarn = Date.now();
-          speak('Perigo! Solte!');
+          speak(I18n.t('speak_danger'));
         }
       } else if (tension > 65) {
         setTensionClass('tension-high');
         if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 5000) {
           _lastTensionWarn = Date.now();
-          speak('Tensão alta!');
+          speak(I18n.t('speak_tension'));
         }
       } else if (tension > 40) {
         setTensionClass('tension-medium');
@@ -442,8 +467,8 @@ const Game = (() => {
     tiredTimer = setTimeout(() => {
       if (state === 'REELING') {
         fishTired = true;
-        speak('Cansado! Puxe!');
-        setLabel(`😮‍💨 ${currentFish.name} está cansando — puxe!`);
+        speak(I18n.t('speak_tired'));
+        setLabel(I18n.t('state_tired', currentFish.name));
       }
     }, ms);
   }
@@ -523,14 +548,14 @@ const Game = (() => {
       const useEl = document.getElementById('result-fish-use');
       if (useEl) useEl.setAttribute('href', `#${currentFish.sprite}`);
       document.getElementById('result-fish-svg').style.display = '';
-      ui.resultTitle.textContent = 'Peixe capturado!';
-      ui.resultDesc.textContent  = `Você pescou um(a) ${currentFish.name}.`;
+      ui.resultTitle.textContent = I18n.t('result_caught');
+      ui.resultDesc.textContent  = I18n.t('result_caught_desc', currentFish.name);
     } else {
       // Linha arrebentou: esconde o SVG, mostra emoji de coração partido
       document.getElementById('result-fish-svg').style.display = 'none';
       ui.resultIcon.innerHTML    = '<span style="font-size:80px">💔</span>';
-      ui.resultTitle.textContent = 'A linha arrebentou!';
-      ui.resultDesc.textContent  = 'O peixe era forte demais desta vez.';
+      ui.resultTitle.textContent = I18n.t('result_snapped');
+      ui.resultDesc.textContent  = I18n.t('result_snapped_desc');
     }
     showScreen('result');
   }
