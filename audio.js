@@ -199,13 +199,20 @@ const Audio = (() => {
    *   releasing → playbackRate 0.65 (mais grave — carretel cedendo)
    */
   function startReel(mode = 'neutral') {
-    if (!ctx || !buffers['reel']) return;
+    if (!ctx) return;
     if (ctx.state === 'suspended') ctx.resume();
 
     // Já tocando? Só muda o pitch
     if (reelNode) { setReelMode(mode); return; }
 
-    reelGain        = ctx.createGain();
+    // Se o buffer não carregou, gera um oscilador sintético como fallback
+    if (!buffers['reel']) {
+      console.warn('[Audio] reel.wav não carregado — usando oscilador sintético');
+      _startReelSynth(mode);
+      return;
+    }
+
+    reelGain            = ctx.createGain();
     reelGain.gain.value = 0.35;
     reelGain.connect(ctx.destination);
 
@@ -220,21 +227,60 @@ const Audio = (() => {
     setReelMode(mode);
   }
 
-  function setReelMode(mode) {
-    if (!reelPitch) return;
-    const now = ctx.currentTime;
-    const rates = { neutral: 1.0, pulling: 1.4, releasing: 0.65 };
-    const rate  = rates[mode] ?? 1.0;
-    // Transição suave (40 ms) para não clicar
-    reelPitch.cancelScheduledValues(now);
-    reelPitch.setValueAtTime(reelPitch.value, now);
-    reelPitch.linearRampToValueAtTime(rate, now + 0.04);
+  // Fallback sintético para o carretel (oscilador modulado)
+  let _reelOsc  = null;
+  let _reelOscGain = null;
+  function _startReelSynth(mode) {
+    if (_reelOsc) return;
+    _reelOsc      = ctx.createOscillator();
+    _reelOscGain  = ctx.createGain();
+    _reelOsc.type = 'sawtooth';
+    _reelOsc.frequency.value = 220;
+    _reelOscGain.gain.value  = 0.15;
 
-    // Volume levemente maior ao puxar
+    const filter = ctx.createBiquadFilter();
+    filter.type  = 'bandpass';
+    filter.frequency.value = 800;
+    filter.Q.value = 2;
+
+    _reelOsc.connect(filter);
+    filter.connect(_reelOscGain);
+    _reelOscGain.connect(ctx.destination);
+    _reelOsc.start();
+
+    reelNode  = _reelOsc;   // aponta pra o mesmo slot pra stopReel funcionar
+    reelGain  = _reelOscGain;
+    reelPitch = _reelOsc.frequency; // usa frequency como "pitch" no fallback
+
+    setReelMode(mode);
+  }
+
+  function setReelMode(mode) {
+    if (!reelPitch || !ctx) return;
+    const now = ctx.currentTime;
+
+    if (buffers['reel'] && reelNode instanceof AudioBufferSourceNode) {
+      // Modo WAV: modula playbackRate
+      const rates = { neutral: 1.0, pulling: 1.4, releasing: 0.65 };
+      const rate  = rates[mode] ?? 1.0;
+      reelPitch.cancelScheduledValues(now);
+      reelPitch.setValueAtTime(reelPitch.value, now);
+      reelPitch.linearRampToValueAtTime(rate, now + 0.04);
+    } else {
+      // Modo sintético: modula frequência do oscilador
+      const freqs = { neutral: 220, pulling: 340, releasing: 140 };
+      const freq  = freqs[mode] ?? 220;
+      reelPitch.cancelScheduledValues(now);
+      reelPitch.setValueAtTime(reelPitch.value, now);
+      reelPitch.linearRampToValueAtTime(freq, now + 0.04);
+    }
+
+    // Volume levemente maior ao puxar (ambos os modos)
     if (reelGain) {
+      const vols = { neutral: 0.30, pulling: 0.50, releasing: 0.28 };
       reelGain.gain.cancelScheduledValues(now);
       reelGain.gain.setValueAtTime(reelGain.gain.value, now);
-      reelGain.gain.linearRampToValueAtTime(mode === 'pulling' ? 0.5 : 0.3, now + 0.04);
+      reelGain.gain.linearRampToValueAtTime(vols[mode] ?? 0.30, now + 0.04);
     }
   }
 
@@ -249,9 +295,11 @@ const Audio = (() => {
     }
     const n = reelNode;
     setTimeout(() => { try { n.stop(); } catch(e) {} }, 100);
-    reelNode  = null;
-    reelGain  = null;
-    reelPitch = null;
+    reelNode     = null;
+    reelGain     = null;
+    reelPitch    = null;
+    _reelOsc     = null;
+    _reelOscGain = null;
   }
 
   // ── Resistência do peixe (pulso grave sintético) ───────────────────────────
