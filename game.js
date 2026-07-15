@@ -530,6 +530,9 @@ const Game = (() => {
     clearTimeout(biteTimer);
     clearTimeout(tiredTimer);
     clearInterval(tensionLoop);
+    // Para o carretel em qualquer transição de estado
+    // (só tem efeito se estiver tocando — seguro chamar sempre)
+    Audio.stopReel();
   }
 
   // ── Inicializa ao carregar ────────────────────────────────────────────────
