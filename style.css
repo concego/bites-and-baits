@@ -64,6 +64,29 @@ html, body {
   background: linear-gradient(180deg, var(--sky-top) 0%, var(--water-top) 60%, var(--water-bot) 100%);
   gap: 16px;
 }
+
+/* Aviso de TalkBack */
+.notice-box {
+  background: rgba(0,0,0,0.5);
+  border: 2px solid var(--yellow);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  max-width: 340px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.notice-title {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--yellow);
+}
+.notice-box p {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--white);
+}
 #screen-start .logo {
   font-size: 72px;
   filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4));
