@@ -14,35 +14,11 @@
 
 const Game = (() => {
 
-  // ── Referências DOM ───────────────────────────────────────────────────────
+  // ── Referências DOM (resolvidas no init, após DOMContentLoaded) ───────────
   const $ = id => document.getElementById(id);
 
-  const screens = {
-    start:  $('screen-start'),
-    game:   $('screen-game'),
-    result: $('screen-result'),
-  };
-
-  const ui = {
-    announcer:    $('announcer'),
-    stateLabel:   $('state-label'),
-    tensionCont:  $('tension-container'),
-    tensionBar:   $('tension-bar'),
-    tiltArrow:    $('tilt-arrow'),
-    tiltText:     $('tilt-text'),
-    score:        $('score'),
-    best:         $('best'),
-    rod:          $('rod'),
-    line:         $('line'),
-    lure:         $('lure'),
-    fishContainer:$('fish-container'),
-    scene:        $('scene'),
-    resultIcon:   $('result-icon'),
-    resultTitle:  $('result-title'),
-    resultDesc:   $('result-desc'),
-    resultScore:  $('result-score'),
-    resultBest:   $('result-best'),
-  };
+  let screens = {};
+  let ui = {};
 
   // ── Dados do jogo ─────────────────────────────────────────────────────────
   const FISH_TYPES = [
@@ -68,6 +44,33 @@ const Game = (() => {
 
   // ── Inicialização ─────────────────────────────────────────────────────────
   function init() {
+    // Resolve referências DOM agora que o DOM está pronto
+    screens = {
+      start:  $('screen-start'),
+      game:   $('screen-game'),
+      result: $('screen-result'),
+    };
+    ui = {
+      announcer:    $('announcer'),
+      stateLabel:   $('state-label'),
+      tensionCont:  $('tension-container'),
+      tensionBar:   $('tension-bar'),
+      tiltArrow:    $('tilt-arrow'),
+      tiltText:     $('tilt-text'),
+      score:        $('score'),
+      best:         $('best'),
+      rod:          $('rod'),
+      line:         $('line'),
+      lure:         $('lure'),
+      fishContainer:$('fish-container'),
+      scene:        $('scene'),
+      resultIcon:   $('result-icon'),
+      resultTitle:  $('result-title'),
+      resultDesc:   $('result-desc'),
+      resultScore:  $('result-score'),
+      resultBest:   $('result-best'),
+    };
+
     // Carrega recorde
     ui.best.textContent = best;
 
