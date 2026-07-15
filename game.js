@@ -148,7 +148,7 @@ const Game = (() => {
         setTalkbackSilent(false);   // TalkBack volta — isca fora da água
         setLabel('🎣 Pronto para lançar');
         setTiltHint('↕', 'Incline para frente para lançar');
-        speak('Pronto para lançar. Incline o celular para frente.');
+        speak('Pronto. Incline para frente.');
         break;
 
       case 'CASTING':
@@ -163,7 +163,7 @@ const Game = (() => {
           ui.lure.style.top     = '10px';
           ui.lure.style.left    = '50%';
           ui.line.style.height  = '80px';
-          speak('Isca na água! Aguarde o peixe morder.');
+          speak('Isca na água. Aguarde.');
           enterState('WAITING');
         }, 600);
         break;
@@ -190,11 +190,11 @@ const Game = (() => {
         setLabel(`⚡ ${currentFish.name} na isca! Dê um shake!`);
         setTiltHint('📳', 'Sacuda o celular para fisgar!');
         ui.tiltArrow.classList.add('shake-hint');
-        speak('Peixe na isca! Sacuda o celular agora para fisgar!', true);
+        speak('Peixe! Sacuda!', true);
 
         biteTimer = setTimeout(() => {
           ui.tiltArrow.classList.remove('shake-hint');
-          speak('O peixe fugiu. Aguardando novo peixe.', true);
+          speak('Fugiu.', true);
           setLabel('😔 O peixe fugiu...');
           setTimeout(() => enterState('WAITING'), 1500);
         }, 3500);
@@ -208,7 +208,7 @@ const Game = (() => {
         setLabel(`🎣 Puxando ${currentFish.name}...`);
         setTiltHint('↓', 'Incline para trás para puxar!');
         _lastTensionWarn = null;
-        speak(`Fisgou! Incline para trás para puxar. Cuidado com a tensão da linha!`, true);
+        speak('Fisgou! Incline para trás!', true);
         Audio.startReel('neutral');
         startTensionLoop();
         scheduleFishTired();
@@ -230,8 +230,8 @@ const Game = (() => {
                            currentFish.size <= 2 ? 'médio' :
                            currentFish.size <= 3 ? 'grande' : 'enorme';
           const msg = currentFish.special
-            ? `Incrível! Você pescou um ${currentFish.name}! É um peixe ${sizeDesc} e especial! Total de peixes: ${score}.`
-            : `Você pescou um ${currentFish.name}! Peixe ${sizeDesc}. Total de peixes: ${score}.`;
+            ? `${currentFish.name}! Especial! ${score} peixes.`
+            : `${currentFish.name}! ${sizeDesc}. ${score} peixes.`;
           speak(msg, true);
         }
 
@@ -250,7 +250,7 @@ const Game = (() => {
         ui.lure.style.display = 'none';
         ui.line.style.height  = '0px';
         setLabel('💥 A linha arrebentou!');
-        speak('A linha arrebentou! O peixe escapou.', true);
+        speak('Linha arrebentou!', true);
         setTimeout(() => {
           if (state === 'SNAPPED') {
             setTalkbackSilent(false);  // TalkBack volta para a tela de resultado
@@ -287,7 +287,7 @@ const Game = (() => {
       case 'WAITING':
         // Qualquer inclinação forte pra trás tira a isca da água
         if (dir === 'back') {
-          speak('Isca fora da água. Incline para frente para relançar.');
+          speak('Relance. Incline para frente.');
           setLabel('Isca fora da água — incline para frente');
           enterState('IDLE');
         }
@@ -336,13 +336,13 @@ const Game = (() => {
         setTensionClass('tension-danger');
         if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 3000) {
           _lastTensionWarn = Date.now();
-          speak('Cuidado! Linha quase arrebentando! Solte um pouco!', true);
+          speak('Perigo! Solte!', true);
         }
       } else if (tension > 65) {
         setTensionClass('tension-high');
         if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 5000) {
           _lastTensionWarn = Date.now();
-          speak('Tensão alta! Cuidado.');
+          speak('Tensão alta!');
         }
       } else if (tension > 40) {
         setTensionClass('tension-medium');
@@ -397,7 +397,7 @@ const Game = (() => {
     tiredTimer = setTimeout(() => {
       if (state === 'REELING') {
         fishTired = true;
-        speak('O peixe está cansando! Puxe agora!', true);
+        speak('Cansado! Puxe!', true);
         setLabel(`😮‍💨 ${currentFish.name} está cansando — puxe!`);
       }
     }, ms);
@@ -519,9 +519,14 @@ const Game = (() => {
   }
 
   function speak(text, priority = false) {
-    // Atualiza aria-live de qualquer forma
+    // Dois rAF encadeados: garante que o TalkBack percebe a mudança
+    // e interrompe o que estava lendo antes de anunciar o novo texto.
     ui.announcer.textContent = '';
-    requestAnimationFrame(() => { ui.announcer.textContent = text; });
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        ui.announcer.textContent = text;
+      });
+    });
 
     if (!_ttsEnabled) return;
     if (priority) window.speechSynthesis.cancel();
