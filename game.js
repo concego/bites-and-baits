@@ -96,12 +96,11 @@ const Game = (() => {
 
   async function startGame() {
     // Inicializa TTS
-    ttsInit();
 
     // Tenta obter permissão de sensores
     const ok = await Sensors.requestPermission();
     if (!ok) {
-      speak('Permissão de sensores negada. Usando teclado para teste.', true);
+      speak('Permissão de sensores negada. Usando teclado para teste.');
       Sensors.enableDesktopFallback();
     }
 
@@ -190,11 +189,11 @@ const Game = (() => {
         setLabel(`⚡ ${currentFish.name} na isca! Dê um shake!`);
         setTiltHint('📳', 'Sacuda o celular para fisgar!');
         ui.tiltArrow.classList.add('shake-hint');
-        speak('Peixe! Sacuda!', true);
+        speak('Peixe! Sacuda!');
 
         biteTimer = setTimeout(() => {
           ui.tiltArrow.classList.remove('shake-hint');
-          speak('Fugiu.', true);
+          speak('Fugiu.');
           setLabel('😔 O peixe fugiu...');
           setTimeout(() => enterState('WAITING'), 1500);
         }, 3500);
@@ -208,7 +207,7 @@ const Game = (() => {
         setLabel(`🎣 Puxando ${currentFish.name}...`);
         setTiltHint('↓', 'Incline para trás para puxar!');
         _lastTensionWarn = null;
-        speak('Fisgou! Incline para trás!', true);
+        speak('Fisgou! Incline para trás!');
         Audio.startReel('neutral');
         startTensionLoop();
         scheduleFishTired();
@@ -232,7 +231,7 @@ const Game = (() => {
           const msg = currentFish.special
             ? `${currentFish.name}! Especial! ${score} peixes.`
             : `${currentFish.name}! ${sizeDesc}. ${score} peixes.`;
-          speak(msg, true);
+          speak(msg);
         }
 
         // Volta ao IDLE (TalkBack restaurado lá)
@@ -250,7 +249,7 @@ const Game = (() => {
         ui.lure.style.display = 'none';
         ui.line.style.height  = '0px';
         setLabel('💥 A linha arrebentou!');
-        speak('Linha arrebentou!', true);
+        speak('Linha arrebentou!');
         setTimeout(() => {
           if (state === 'SNAPPED') {
             setTalkbackSilent(false);  // TalkBack volta para a tela de resultado
@@ -301,7 +300,7 @@ const Game = (() => {
       clearTimeout(biteTimer);
       ui.tiltArrow.classList.remove('shake-hint');
       Audio.vibrate([50, 30, 50]);
-      speak('Fisgou!', true);
+      speak('Fisgou!');
       enterState('REELING');
     }
   }
@@ -336,7 +335,7 @@ const Game = (() => {
         setTensionClass('tension-danger');
         if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 3000) {
           _lastTensionWarn = Date.now();
-          speak('Perigo! Solte!', true);
+          speak('Perigo! Solte!');
         }
       } else if (tension > 65) {
         setTensionClass('tension-high');
@@ -397,7 +396,7 @@ const Game = (() => {
     tiredTimer = setTimeout(() => {
       if (state === 'REELING') {
         fishTired = true;
-        speak('Cansado! Puxe!', true);
+        speak('Cansado! Puxe!');
         setLabel(`😮‍💨 ${currentFish.name} está cansando — puxe!`);
       }
     }, ms);
@@ -510,31 +509,16 @@ const Game = (() => {
     ui.stateLabel.textContent = text;
   }
 
-  // ── TTS (Web Speech API) ──────────────────────────────────────────────────
-  const _ttsEnabled = false;  // TTS desativado — TalkBack via aria-live assume o feedback
-  let _currentUtterance = null;
-
-  function ttsInit() { /* TTS desativado */ }
-
-  function speak(text, priority = false) {
-    // Dois rAF encadeados: garante que o TalkBack percebe a mudança
-    // e interrompe o que estava lendo antes de anunciar o novo texto.
+  // ── Announcer — aria-live pro TalkBack ───────────────────────────────────
+  // Dois rAF encadeados: força o TalkBack a perceber a troca de texto
+  // e interromper a leitura anterior antes de anunciar o novo aviso.
+  function speak(text) {
     ui.announcer.textContent = '';
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
         ui.announcer.textContent = text;
       });
     });
-
-    if (!_ttsEnabled) return;
-    if (priority) window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'pt-BR';
-    u.rate = 1.1;
-    u.pitch = 1.0;
-    u.volume = 1.0;
-    _currentUtterance = u;
-    window.speechSynthesis.speak(u);
   }
 
   function announce(text) {
