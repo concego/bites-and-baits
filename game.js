@@ -511,12 +511,10 @@ const Game = (() => {
   }
 
   // ── TTS (Web Speech API) ──────────────────────────────────────────────────
-  let _ttsEnabled = false;
+  const _ttsEnabled = false;  // TTS desativado — TalkBack via aria-live assume o feedback
   let _currentUtterance = null;
 
-  function ttsInit() {
-    _ttsEnabled = 'speechSynthesis' in window;
-  }
+  function ttsInit() { /* TTS desativado */ }
 
   function speak(text, priority = false) {
     // Dois rAF encadeados: garante que o TalkBack percebe a mudança
