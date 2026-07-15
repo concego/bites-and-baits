@@ -195,6 +195,7 @@ const Game = (() => {
         setTiltHint('↓', 'Incline para trás para puxar!');
         _lastTensionWarn = null;
         speak(`Fisgou! Incline para trás para puxar. Cuidado com a tensão da linha!`, true);
+        Audio.startReel('neutral');  // inicia carretel em modo neutro
         startTensionLoop();
 
         // Inicia contador de cansaço do peixe
@@ -202,6 +203,7 @@ const Game = (() => {
         break;
 
       case 'CAUGHT':
+        Audio.stopReel();            // para o carretel
         Audio.play(currentFish.special ? 'point_special' : 'point_normal');
         Audio.vibrate([100, 50, 100, 50, 200]);
         score++;
@@ -228,6 +230,7 @@ const Game = (() => {
         break;
 
       case 'SNAPPED':
+        Audio.stopReel();            // para o carretel
         Audio.snap();
         Audio.vibrate([200, 100, 400]);
         ui.tensionCont.classList.add('hidden');
@@ -292,18 +295,29 @@ const Game = (() => {
 
   function startTensionLoop() {
     _pullProgress = 0;
+    let _prevTension = 0;
+    let _resistCooldown = 0;
+
     tensionLoop = setInterval(() => {
       if (state !== 'REELING') { clearInterval(tensionLoop); return; }
 
       // Peixe puxa de volta a cada tick (menos se cansado)
       const fishForce = fishTired ? fishPull * 0.3 : fishPull;
-      tension = Math.min(100, tension + fishForce * 0.05);
+      const delta = fishForce * 0.05;
+      tension = Math.min(100, tension + delta);
+
+      // Peixe resistindo: tensão subindo rápido → som grave + carretel neutro
+      if (delta > 0.6 && _resistCooldown <= 0 && !fishTired) {
+        Audio.fishResist();
+        Audio.setReelMode('neutral');
+        _resistCooldown = 8; // espera ~1s antes de repetir
+      }
+      if (_resistCooldown > 0) _resistCooldown--;
 
       // Tensão crítica → vibração progressiva + TTS
       if (tension > 85) {
         Audio.vibrate(30);
         setTensionClass('tension-danger');
-        // Avisa sobre tensão crítica uma vez a cada ~3s
         if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 3000) {
           _lastTensionWarn = Date.now();
           speak('Cuidado! Linha quase arrebentando! Solte um pouco!', true);
@@ -327,6 +341,7 @@ const Game = (() => {
         return;
       }
 
+      _prevTension = tension;
       updateTensionBar();
     }, 120);
   }
@@ -343,8 +358,8 @@ const Game = (() => {
       enterState('CAUGHT');
     }
 
-    // Som de carretel pulsado durante a puxada
-    if (Math.random() < 0.1) Audio.play('reel', { volume: 0.4 });
+    // Carretel em modo pulling enquanto o jogador puxa
+    Audio.setReelMode('pulling');
   }
 
   function releaseLine(amount) {
@@ -352,6 +367,9 @@ const Game = (() => {
     tension = Math.max(0, tension - amount * 1.5);
     _pullProgress = Math.max(0, _pullProgress - amount * 0.3);
     updateTensionBar();
+
+    // Carretel em modo releasing
+    Audio.setReelMode('releasing');
   }
 
   // ── Cansaço do peixe ──────────────────────────────────────────────────────
@@ -413,6 +431,7 @@ const Game = (() => {
   function showResultScreen(caught) {
     Sensors.stop();
     Audio.stopAmbient();
+    Audio.stopReel();   // garante que o carretel para em qualquer saída
     ui.resultScore.textContent = score;
     ui.resultBest.textContent  = best;
     if (caught) {
@@ -431,6 +450,7 @@ const Game = (() => {
     clearTimers();
     Sensors.stop();
     Audio.stopAmbient();
+    Audio.stopReel();   // garante que o carretel para ao sair do jogo
     state = 'IDLE';
     showScreen('start');
   }
