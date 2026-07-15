@@ -29,15 +29,16 @@ const Game = (() => {
     { name: 'Tubarão',   emoji: '🦈', size: 4,   weight: 0.01, special: true  },
   ];
 
-  let state       = 'IDLE';
-  let score       = 0;
-  let best        = parseInt(localStorage.getItem('bb_best') || '0');
-  let currentFish = null;
-  let tension     = 0;     // 0..100
-  let fishPull    = 0;     // força com que o peixe puxa de volta
-  let fishTired   = false; // peixe cansou?
-  let tiredTimer  = null;
-  let tensionLoop = null;
+  let state            = 'IDLE';
+  let score            = 0;
+  let best             = parseInt(localStorage.getItem('bb_best') || '0');
+  let currentFish      = null;
+  let tension          = 0;     // 0..100
+  let fishPull         = 0;     // força com que o peixe puxa de volta
+  let fishTired        = false; // peixe cansou?
+  let tiredTimer       = null;
+  let tensionLoop      = null;
+  let _lastTensionWarn = null;  // timestamp do último aviso de tensão por TTS
   let waitTimer   = null;
   let biteTimer   = null;
   let fishEls     = [];
@@ -94,10 +95,13 @@ const Game = (() => {
   }
 
   async function startGame() {
+    // Inicializa TTS
+    ttsInit();
+
     // Tenta obter permissão de sensores
     const ok = await Sensors.requestPermission();
     if (!ok) {
-      announce('Permissão de sensores negada. Use as setas do teclado para testar.');
+      speak('Permissão de sensores negada. Usando teclado para teste.', true);
       Sensors.enableDesktopFallback();
     }
 
@@ -131,7 +135,7 @@ const Game = (() => {
         ui.rod.style.transform = 'translateX(-50%) rotate(-30deg)';
         setLabel('🎣 Pronto para lançar');
         setTiltHint('↕', 'Incline para frente para lançar');
-        announce('Pronto para lançar. Incline o celular para frente.');
+        speak('Pronto para lançar. Incline o celular para frente.');
         break;
 
       case 'CASTING':
@@ -146,7 +150,7 @@ const Game = (() => {
           ui.lure.style.top     = '10px';
           ui.lure.style.left    = '50%';
           ui.line.style.height  = '80px';
-          announce('Isca lançada! Aguardando peixe...');
+          speak('Isca na água! Aguarde o peixe morder.');
           enterState('WAITING');
         }, 600);
         break;
@@ -172,12 +176,12 @@ const Game = (() => {
         setLabel(`⚡ ${currentFish.emoji} Peixe na isca! Dê um shake!`);
         setTiltHint('📳', 'Sacuda o celular para fisgar!');
         ui.tiltArrow.classList.add('shake-hint');
-        announce(`Peixe na isca! Sacuda o celular para fisgar!`);
+        speak('Peixe na isca! Sacuda o celular agora para fisgar!', true);
 
         // Janela de tempo para fisgar
         biteTimer = setTimeout(() => {
           ui.tiltArrow.classList.remove('shake-hint');
-          announce('O peixe fugiu...');
+          speak('O peixe fugiu. Aguardando novo peixe.', true);
           setLabel('😔 O peixe fugiu...');
           setTimeout(() => enterState('WAITING'), 1500);
         }, 3500);
@@ -189,7 +193,8 @@ const Game = (() => {
         ui.rod.style.transform = 'translateX(-50%) rotate(-50deg)';
         setLabel(`🎣 Puxando ${currentFish.emoji}...`);
         setTiltHint('↓', 'Incline para trás para puxar!');
-        announce(`Fisgou! Incline para trás para puxar o peixe.`);
+        _lastTensionWarn = null;
+        speak(`Fisgou! Incline para trás para puxar. Cuidado com a tensão da linha!`, true);
         startTensionLoop();
 
         // Inicia contador de cansaço do peixe
@@ -204,12 +209,22 @@ const Game = (() => {
         updateScore();
         ui.tensionCont.classList.add('hidden');
         setLabel(`🏆 ${currentFish.emoji} ${currentFish.name} capturado!`);
-        announce(`${currentFish.name} capturado! Parabéns!`);
+
+        // TTS com estatísticas completas
+        {
+          const sizeDesc = currentFish.size <= 1 ? 'pequeno' :
+                           currentFish.size <= 2 ? 'médio' :
+                           currentFish.size <= 3 ? 'grande' : 'enorme';
+          const msg = currentFish.special
+            ? `Incrível! Você pescou um ${currentFish.name}! É um peixe ${sizeDesc} e especial! Total de peixes: ${score}.`
+            : `Você pescou um ${currentFish.name}! Peixe ${sizeDesc}. Total de peixes: ${score}.`;
+          speak(msg, true);
+        }
 
         // Volta ao IDLE após celebração breve
         setTimeout(() => {
           if (state === 'CAUGHT') enterState('IDLE');
-        }, 2000);
+        }, 3500);
         break;
 
       case 'SNAPPED':
@@ -220,10 +235,10 @@ const Game = (() => {
         ui.lure.style.display = 'none';
         ui.line.style.height  = '0px';
         setLabel('💥 A linha arrebentou!');
-        announce('A linha arrebentou! O peixe escapou.');
+        speak('A linha arrebentou! O peixe escapou. Precisa relançar.', true);
         setTimeout(() => {
           if (state === 'SNAPPED') showResultScreen(false);
-        }, 1500);
+        }, 2000);
         break;
     }
   }
@@ -253,7 +268,7 @@ const Game = (() => {
       case 'WAITING':
         // Qualquer inclinação forte pra trás tira a isca da água
         if (dir === 'back') {
-          announce('Isca fora da água. Incline para frente para relançar.');
+          speak('Isca fora da água. Incline para frente para relançar.');
           setLabel('Isca fora da água — incline para frente');
           enterState('IDLE');
         }
@@ -267,7 +282,7 @@ const Game = (() => {
       clearTimeout(biteTimer);
       ui.tiltArrow.classList.remove('shake-hint');
       Audio.vibrate([50, 30, 50]);
-      announce('Fisgou!');
+      speak('Fisgou!', true);
       enterState('REELING');
     }
   }
@@ -284,12 +299,21 @@ const Game = (() => {
       const fishForce = fishTired ? fishPull * 0.3 : fishPull;
       tension = Math.min(100, tension + fishForce * 0.05);
 
-      // Tensão crítica → vibração progressiva
+      // Tensão crítica → vibração progressiva + TTS
       if (tension > 85) {
         Audio.vibrate(30);
         setTensionClass('tension-danger');
+        // Avisa sobre tensão crítica uma vez a cada ~3s
+        if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 3000) {
+          _lastTensionWarn = Date.now();
+          speak('Cuidado! Linha quase arrebentando! Solte um pouco!', true);
+        }
       } else if (tension > 65) {
         setTensionClass('tension-high');
+        if (!_lastTensionWarn || Date.now() - _lastTensionWarn > 5000) {
+          _lastTensionWarn = Date.now();
+          speak('Tensão alta! Cuidado.');
+        }
       } else if (tension > 40) {
         setTensionClass('tension-medium');
       } else {
@@ -337,7 +361,7 @@ const Game = (() => {
     tiredTimer = setTimeout(() => {
       if (state === 'REELING') {
         fishTired = true;
-        announce('O peixe está cansando! Puxe agora!');
+        speak('O peixe está cansando! Puxe agora!', true);
         setLabel(`😮‍💨 ${currentFish.emoji} Está cansando — puxe!`);
       }
     }, ms);
@@ -421,9 +445,32 @@ const Game = (() => {
     ui.stateLabel.textContent = text;
   }
 
-  function announce(text) {
+  // ── TTS (Web Speech API) ──────────────────────────────────────────────────
+  let _ttsEnabled = false;
+  let _currentUtterance = null;
+
+  function ttsInit() {
+    _ttsEnabled = 'speechSynthesis' in window;
+  }
+
+  function speak(text, priority = false) {
+    // Atualiza aria-live de qualquer forma
     ui.announcer.textContent = '';
     requestAnimationFrame(() => { ui.announcer.textContent = text; });
+
+    if (!_ttsEnabled) return;
+    if (priority) window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'pt-BR';
+    u.rate = 1.1;
+    u.pitch = 1.0;
+    u.volume = 1.0;
+    _currentUtterance = u;
+    window.speechSynthesis.speak(u);
+  }
+
+  function announce(text) {
+    speak(text);
   }
 
   function setTiltHint(arrow, text) {
