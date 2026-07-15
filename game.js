@@ -22,11 +22,11 @@ const Game = (() => {
 
   // ── Dados do jogo ─────────────────────────────────────────────────────────
   const FISH_TYPES = [
-    { name: 'Peixinho',  emoji: '🐟', size: 1,   weight: 0.3, special: false },
-    { name: 'Tilápia',   emoji: '🐠', size: 1.5, weight: 0.5, special: false },
-    { name: 'Truta',     emoji: '🎣', size: 2,   weight: 0.15, special: false },
-    { name: 'Dourada',   emoji: '🐡', size: 2.5, weight: 0.04, special: true  },
-    { name: 'Tubarão',   emoji: '🦈', size: 4,   weight: 0.01, special: true  },
+    { name: 'Peixinho',  sprite: 'fish-peixinho', size: 1,   weight: 0.3,  special: false },
+    { name: 'Tilápia',   sprite: 'fish-tilapia',  size: 1.5, weight: 0.5,  special: false },
+    { name: 'Truta',     sprite: 'fish-truta',    size: 2,   weight: 0.15, special: false },
+    { name: 'Dourada',   sprite: 'fish-dourada',  size: 2.5, weight: 0.04, special: true  },
+    { name: 'Tubarão',   sprite: 'fish-tubarao',  size: 4,   weight: 0.01, special: true  },
   ];
 
   let state            = 'IDLE';
@@ -173,7 +173,7 @@ const Game = (() => {
         ui.scene.classList.add('bite-pulse');
         setTimeout(() => ui.scene.classList.remove('bite-pulse'), 1500);
 
-        setLabel(`⚡ ${currentFish.emoji} Peixe na isca! Dê um shake!`);
+        setLabel(`⚡ ${currentFish.name} na isca! Dê um shake!`);
         setTiltHint('📳', 'Sacuda o celular para fisgar!');
         ui.tiltArrow.classList.add('shake-hint');
         speak('Peixe na isca! Sacuda o celular agora para fisgar!', true);
@@ -191,7 +191,7 @@ const Game = (() => {
         tension = 10;
         ui.tensionCont.classList.remove('hidden');
         ui.rod.style.transform = 'translateX(-50%) rotate(-50deg)';
-        setLabel(`🎣 Puxando ${currentFish.emoji}...`);
+        setLabel(`🎣 Puxando ${currentFish.name}...`);
         setTiltHint('↓', 'Incline para trás para puxar!');
         _lastTensionWarn = null;
         speak(`Fisgou! Incline para trás para puxar. Cuidado com a tensão da linha!`, true);
@@ -210,7 +210,7 @@ const Game = (() => {
         if (score > best) { best = score; localStorage.setItem('bb_best', best); }
         updateScore();
         ui.tensionCont.classList.add('hidden');
-        setLabel(`🏆 ${currentFish.emoji} ${currentFish.name} capturado!`);
+        setLabel(`🏆 ${currentFish.name} capturado!`);
 
         // TTS com estatísticas completas
         {
@@ -383,30 +383,50 @@ const Game = (() => {
       if (state === 'REELING') {
         fishTired = true;
         speak('O peixe está cansando! Puxe agora!', true);
-        setLabel(`😮‍💨 ${currentFish.emoji} Está cansando — puxe!`);
+        setLabel(`😮‍💨 ${currentFish.name} está cansando — puxe!`);
       }
     }, ms);
   }
 
   // ── Spawn de peixes decorativos ───────────────────────────────────────────
   function spawnBackgroundFish() {
-    const types = ['🐟', '🐠', '🐡'];
+    // Só os 3 comuns como decoração de fundo
+    const bgTypes = ['fish-peixinho', 'fish-tilapia', 'fish-truta'];
+    // Largura base de cada sprite (viewBox width proporcional ao tamanho exibido)
+    const spriteW = { 'fish-peixinho': 52, 'fish-tilapia': 60, 'fish-truta': 68 };
+    const spriteH = { 'fish-peixinho': 26, 'fish-tilapia': 30, 'fish-truta': 28 };
+
     for (let i = 0; i < 4; i++) {
-      const el = document.createElement('div');
-      el.className = 'fish';
-      el.textContent = types[Math.floor(Math.random() * types.length)];
-      el.style.top  = `${20 + Math.random() * 60}%`;
-      el.style.left = `${Math.random() * 80}%`;
-      el.style.animationDelay = `${Math.random() * 2}s`;
+      const id  = bgTypes[Math.floor(Math.random() * bgTypes.length)];
+      const w   = spriteW[id];
+      const h   = spriteH[id];
+
+      const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      el.setAttribute('width', w);
+      el.setAttribute('height', h);
+      el.setAttribute('aria-hidden', 'true');
+      el.classList.add('fish');
+
+      const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+      use.setAttribute('href', `#${id}`);
+      el.appendChild(use);
+
+      el.style.top              = `${20 + Math.random() * 60}%`;
+      el.style.left             = `${Math.random() * 80}%`;
+      el.style.animationDelay   = `${Math.random() * 2}s`;
+      el.style.opacity          = '0.75';
+
       ui.fishContainer.appendChild(el);
       fishEls.push(el);
 
-      // Move os peixes lentamente
+      // Move os peixes lentamente, espelhando direção
+      let curLeft = parseFloat(el.style.left);
       setInterval(() => {
         if (state !== 'IDLE' && state !== 'WAITING') return;
-        const newLeft = `${Math.random() * 80}%`;
-        el.style.left = newLeft;
-        el.style.transform = newLeft > el.style.left ? 'scaleX(1)' : 'scaleX(-1)';
+        const newLeft = Math.random() * 80;
+        el.style.left      = `${newLeft}%`;
+        el.style.transform = newLeft < curLeft ? 'scaleX(-1)' : 'scaleX(1)';
+        curLeft = newLeft;
       }, 3000 + Math.random() * 4000);
     }
   }
@@ -437,12 +457,17 @@ const Game = (() => {
     Audio.stopReel();   // garante que o carretel para em qualquer saída
     ui.resultScore.textContent = score;
     ui.resultBest.textContent  = best;
-    if (caught) {
-      ui.resultIcon.textContent  = currentFish?.emoji ?? '🐟';
+    if (caught && currentFish) {
+      // Mostra sprite do peixe capturado
+      const useEl = document.getElementById('result-fish-use');
+      if (useEl) useEl.setAttribute('href', `#${currentFish.sprite}`);
+      document.getElementById('result-fish-svg').style.display = '';
       ui.resultTitle.textContent = 'Peixe capturado!';
-      ui.resultDesc.textContent  = `Você pescou um(a) ${currentFish?.name ?? 'peixe'}.`;
+      ui.resultDesc.textContent  = `Você pescou um(a) ${currentFish.name}.`;
     } else {
-      ui.resultIcon.textContent  = '💔';
+      // Linha arrebentou: esconde o SVG, mostra emoji de coração partido
+      document.getElementById('result-fish-svg').style.display = 'none';
+      ui.resultIcon.innerHTML    = '<span style="font-size:80px">💔</span>';
       ui.resultTitle.textContent = 'A linha arrebentou!';
       ui.resultDesc.textContent  = 'O peixe era forte demais desta vez.';
     }
