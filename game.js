@@ -22,11 +22,11 @@ const Game = (() => {
 
   // ── Dados do jogo ─────────────────────────────────────────────────────────
   const FISH_TYPES = [
-    { name: 'Peixinho',  sprite: 'fish-peixinho', size: 1,   weight: 0.3,  special: false },
-    { name: 'Tilápia',   sprite: 'fish-tilapia',  size: 1.5, weight: 0.5,  special: false },
-    { name: 'Truta',     sprite: 'fish-truta',    size: 2,   weight: 0.15, special: false },
-    { name: 'Dourada',   sprite: 'fish-dourada',  size: 2.5, weight: 0.04, special: true  },
-    { name: 'Tubarão',   sprite: 'fish-tubarao',  size: 4,   weight: 0.01, special: true  },
+    { name: 'Lambari',  sprite: 'fish-lambari',  size: 1,   weight: 0.3,  special: false },
+    { name: 'Tilápia',  sprite: 'fish-tilapia',  size: 1.5, weight: 0.5,  special: false },
+    { name: 'Truta',    sprite: 'fish-truta',    size: 2,   weight: 0.15, special: false },
+    { name: 'Dourado',  sprite: 'fish-dourado',  size: 2.5, weight: 0.04, special: true  },
+    { name: 'Pirarucu', sprite: 'fish-pirarucu', size: 4,   weight: 0.01, special: true  },
   ];
 
   let state            = 'IDLE';
@@ -408,10 +408,10 @@ const Game = (() => {
   // ── Spawn de peixes decorativos ───────────────────────────────────────────
   function spawnBackgroundFish() {
     // Só os 3 comuns como decoração de fundo
-    const bgTypes = ['fish-peixinho', 'fish-tilapia', 'fish-truta'];
+    const bgTypes = ['fish-lambari', 'fish-tilapia', 'fish-truta'];
     // Largura base de cada sprite (viewBox width proporcional ao tamanho exibido)
-    const spriteW = { 'fish-peixinho': 52, 'fish-tilapia': 60, 'fish-truta': 68 };
-    const spriteH = { 'fish-peixinho': 26, 'fish-tilapia': 30, 'fish-truta': 28 };
+    const spriteW = { 'fish-lambari': 52, 'fish-tilapia': 60, 'fish-truta': 68 };
+    const spriteH = { 'fish-lambari': 26, 'fish-tilapia': 30, 'fish-truta': 28 };
 
     for (let i = 0; i < 4; i++) {
       const id  = bgTypes[Math.floor(Math.random() * bgTypes.length)];
