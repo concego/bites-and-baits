@@ -47,9 +47,10 @@ const Game = (() => {
   function init() {
     // Resolve referências DOM agora que o DOM está pronto
     screens = {
-      start:  $('screen-start'),
-      game:   $('screen-game'),
-      result: $('screen-result'),
+      start:        $('screen-start'),
+      game:         $('screen-game'),
+      result:       $('screen-result'),
+      instructions: $('screen-instructions'),
     };
     ui = {
       announcer:    $('announcer'),
@@ -77,6 +78,8 @@ const Game = (() => {
 
     // Botões
     $('btn-start').addEventListener('click', startGame);
+    $('btn-instructions').addEventListener('click', () => showScreen('instructions'));
+    $('btn-back').addEventListener('click',  () => showScreen('start'));
     $('btn-menu').addEventListener('click',  () => goToMenu());
     $('btn-menu2').addEventListener('click', () => goToMenu());
     $('btn-continue').addEventListener('click', () => {
