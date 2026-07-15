@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Bites & Baits</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- Região aria-live: leitor de tela anuncia mudanças de estado -->
+  <div id="announcer" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+
+  <div id="app">
+
+    <!-- Tela de início -->
+    <div id="screen-start" class="screen active">
+      <div class="logo">🎣</div>
+      <h1>Bites &amp; Baits</h1>
+      <p class="subtitle">Um jogo de pesca pelo acelerômetro</p>
+      <button id="btn-start" class="btn-primary">Começar a pescar</button>
+      <p class="hint">Segure o celular na vertical para jogar</p>
+    </div>
+
+    <!-- Tela de jogo -->
+    <div id="screen-game" class="screen">
+
+      <header class="game-header">
+        <div class="score-box">
+          <span class="score-label">Peixes</span>
+          <span id="score" class="score-value">0</span>
+        </div>
+        <div class="score-box">
+          <span class="score-label">Melhor</span>
+          <span id="best" class="score-value">0</span>
+        </div>
+      </header>
+
+      <!-- Cena visual -->
+      <div id="scene">
+        <div id="sky"></div>
+        <div id="water-surface"></div>
+        <div id="water">
+          <div id="fish-container" aria-hidden="true"></div>
+          <div id="lure" aria-hidden="true"></div>
+        </div>
+        <div id="shore">
+          <div id="fisher" aria-hidden="true">
+            <div id="rod"></div>
+            <div id="line"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Painel de estado -->
+      <div id="status-panel">
+        <div id="state-label" role="status" aria-live="polite">Pronto para lançar</div>
+
+        <!-- Barra de tensão (visível só durante a puxada) -->
+        <div id="tension-container" class="hidden" aria-hidden="true">
+          <div class="tension-label">Tensão da linha</div>
+          <div id="tension-bar-bg">
+            <div id="tension-bar"></div>
+            <div id="tension-marker"></div>
+          </div>
+        </div>
+
+        <!-- Indicador de inclinação -->
+        <div id="tilt-indicator" aria-hidden="true">
+          <div id="tilt-arrow">↕</div>
+          <div id="tilt-text">Incline para lançar</div>
+        </div>
+      </div>
+
+      <button id="btn-menu" class="btn-secondary">Menu</button>
+    </div>
+
+    <!-- Tela de resultado -->
+    <div id="screen-result" class="screen">
+      <div id="result-icon">🐟</div>
+      <h2 id="result-title">Peixe capturado!</h2>
+      <p id="result-desc"></p>
+      <div class="result-stats">
+        <div class="stat">
+          <span class="stat-label">Peixes hoje</span>
+          <span id="result-score" class="stat-value">0</span>
+        </div>
+        <div class="stat">
+          <span class="stat-label">Recorde</span>
+          <span id="result-best" class="stat-value">0</span>
+        </div>
+      </div>
+      <button id="btn-continue" class="btn-primary">Pescar de novo</button>
+      <button id="btn-menu2" class="btn-secondary">Menu</button>
+    </div>
+
+  </div>
+
+  <script src="audio.js"></script>
+  <script src="sensors.js"></script>
+  <script src="game.js"></script>
+</body>
+</html>
