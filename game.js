@@ -369,7 +369,8 @@ const Game = (() => {
     if (state === 'BITING') {
       clearTimeout(biteTimer);
       ui.tiltArrow.classList.remove('shake-hint');
-      Audio.vibrate([200, 100, 300]);
+      navigator.vibrate && navigator.vibrate(0);        // cancela vibração anterior
+      setTimeout(() => Audio.vibrate([300, 100, 400]), 30); // pequeno gap garante o reset
       speak(I18n.t('speak_rehooked'));
       enterState('REELING');
     }
