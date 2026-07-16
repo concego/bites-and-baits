@@ -369,7 +369,7 @@ const Game = (() => {
     if (state === 'BITING') {
       clearTimeout(biteTimer);
       ui.tiltArrow.classList.remove('shake-hint');
-      Audio.vibrate([0, 50, 80, 150]);
+      Audio.vibrate([200, 100, 300]);
       speak(I18n.t('speak_rehooked'));
       enterState('REELING');
     }
