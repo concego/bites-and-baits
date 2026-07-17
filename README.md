@@ -47,7 +47,7 @@ O áudio do jogo é gerado proceduralmente — sem arquivos externos:
 
 Toda a síntese acontece em tempo real no `AudioContext`, permitindo variação dinâmica conforme o estado do jogo.
 
-### ♿ Acessibilidade como camada nativa
+### Acessibilidade como camada nativa
 
 O jogo não usa TTS próprio — o **TalkBack** (Android) e o **VoiceOver** (iOS) são os narradores oficiais. Todos os eventos de gameplay são anunciados via `aria-live="assertive"`.
 
@@ -55,12 +55,12 @@ Para garantir que mensagens urgentes interrompam o que o leitor de tela estiver 
 
 ```js
 function announce(msg) {
-  ui.announcer.textContent = '';
+ ui.announcer.textContent = '';
+ requestAnimationFrame(() => {
   requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      ui.announcer.textContent = msg;
-    });
+   ui.announcer.textContent = msg;
   });
+ });
 }
 ```
 
@@ -76,7 +76,7 @@ O jogador passa por uma sequência de estados:
 
 ```
 IDLE → WAITING → BITING → REELING → CAUGHT
-                                  ↘ SNAPPED
+                 ↘ SNAPPED
 ```
 
 - **IDLE** — aguardando lançar a linha
