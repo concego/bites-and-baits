@@ -41,10 +41,24 @@ const Sensors = (() => {
         _permitted = false;
       }
     } else {
-      // Android / desktop — sem necessidade de permissão
-      _permitted = true;
+      // Android / desktop — sem necessidade de permissão explícita
+      // Verifica se os sensores realmente disparam dados (PC não tem sensor físico)
+      _permitted = await _probesensors();
     }
     return _permitted;
+  }
+
+  // Testa se o dispositivo realmente envia eventos de sensor num intervalo curto
+  function _probesensors() {
+    return new Promise(resolve => {
+      let fired = false;
+      const handler = () => { fired = true; };
+      window.addEventListener('deviceorientation', handler, { once: true });
+      setTimeout(() => {
+        window.removeEventListener('deviceorientation', handler);
+        resolve(fired);
+      }, 400);
+    });
   }
 
   // ── Inicializa listeners ──────────────────────────────────────────────────
