@@ -153,9 +153,6 @@ const Game = (() => {
     Sensors.on('onTilt',  handleTilt);
     Sensors.on('onShake', handleShake);
 
-    if (!window.DeviceOrientationEvent) {
-      Sensors.enableDesktopFallback();
-    }
   }
 
   function selectLang(code) {
