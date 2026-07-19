@@ -214,6 +214,7 @@ const Game = (() => {
         setTalkbackSilent(false);   // TalkBack volta — isca fora da água
         setLabel(I18n.t('state_idle'));
         setTiltHint('↕', I18n.t('tilt_idle'));
+        Audio.vibrate([60, 40, 60]);   // feedback tátil: pronto pra lançar de novo
         speak(I18n.t('speak_ready'));
         break;
 
@@ -260,6 +261,7 @@ const Game = (() => {
 
         biteTimer = setTimeout(() => {
           ui.tiltArrow.classList.remove('shake-hint');
+          Audio.vibrate([200, 100, 200]);   // feedback tátil: peixe escapou
           speak(I18n.t('speak_escaped'));
           setLabel(I18n.t('state_escaped'));
           setTimeout(() => enterState('WAITING'), 1500);
