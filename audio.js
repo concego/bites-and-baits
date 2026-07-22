@@ -302,6 +302,62 @@ const Audio = (() => {
     _reelOscGain = null;
   }
 
+  // ── Beep de aproximação (pitch crescente) ─────────────────────────────────
+  // Chamado quando o peixe se aproxima da isca
+  function fishApproach() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(440, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(660, ctx.currentTime + 0.25);
+    gain.gain.setValueAtTime(0.0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.28, ctx.currentTime + 0.05);
+    gain.gain.linearRampToValueAtTime(0.0,  ctx.currentTime + 0.28);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.3);
+  }
+
+  // ── Beep de afastamento (pitch descendente) ────────────────────────────────
+  // Chamado quando o peixe perde interesse e se afasta
+  function fishRetreat() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(280, ctx.currentTime + 0.35);
+    gain.gain.setValueAtTime(0.0, ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.22, ctx.currentTime + 0.05);
+    gain.gain.linearRampToValueAtTime(0.0,  ctx.currentTime + 0.38);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.4);
+  }
+
+  // ── Alerta de tensão alta (tom agudo curto) ────────────────────────────────
+  function tensionAlert() {
+    if (!ctx) return;
+    if (ctx.state === 'suspended') ctx.resume();
+    const osc  = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.linearRampToValueAtTime(1100, ctx.currentTime + 0.1);
+    gain.gain.setValueAtTime(0.0,  ctx.currentTime);
+    gain.gain.linearRampToValueAtTime(0.35, ctx.currentTime + 0.02);
+    gain.gain.linearRampToValueAtTime(0.0,  ctx.currentTime + 0.18);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.2);
+  }
+
   // ── Resistência do peixe (pulso grave sintético) ───────────────────────────
   // Chamado quando o peixe puxa forte de volta
   function fishResist() {
@@ -330,5 +386,6 @@ const Audio = (() => {
   function snap()  { _snap(); }
 
   return { init, play, stop, startAmbient, stopAmbient, vibrate, chomp, snap,
-           startReel, setReelMode, stopReel, fishResist };
+           startReel, setReelMode, stopReel, fishResist,
+           fishApproach, fishRetreat, tensionAlert };
 })();
