@@ -66,6 +66,7 @@ const Game = (() => {
     screens = {
       lang:         $('screen-lang'),
       start:        $('screen-start'),
+      options:      $('screen-options'),
       game:         $('screen-game'),
       result:       $('screen-result'),
       instructions: $('screen-instructions'),
@@ -111,6 +112,10 @@ const Game = (() => {
     $('btn-start').addEventListener('click', startGame);
     $('btn-instructions').addEventListener('click', () => showScreen('instructions'));
     $('btn-back').addEventListener('click',  () => showScreen('start'));
+    $('btn-options').addEventListener('click',      () => showScreen('options'));
+    $('btn-options-back').addEventListener('click', () => showScreen('start'));
+    $('btn-opt-lang-pt').addEventListener('click',  () => { selectLang('pt'); showScreen('options'); });
+    $('btn-opt-lang-en').addEventListener('click',  () => { selectLang('en'); showScreen('options'); });
     $('btn-menu').addEventListener('click',  () => goToMenu());
     $('btn-menu2').addEventListener('click', () => goToMenu());
     $('btn-continue').addEventListener('click', () => {
