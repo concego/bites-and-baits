@@ -460,6 +460,21 @@ html, body {
 }
 .menu-credits a:hover { opacity: 0.8; }
 
+/* ── Tela de opções ─────────────────────────────────────────────────────── */
+.options-section {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border-radius: var(--radius);
+  padding: 14px 18px;
+  margin-bottom: 12px;
+}
+.options-section h3 {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 4px;
+  color: #4fc3f7;
+}
+
 /* ── Tela de seleção de idioma ──────────────────────────────────────────── */
 .lang-buttons {
   display: flex;
