@@ -19,7 +19,8 @@ const I18n = (() => {
       btn_start:        'Começar a pescar',
       btn_instructions: 'Como jogar',
       hint:             'Segure o celular na vertical para jogar',
-      btn_change_lang:  'Trocar idioma',
+      btn_change_lang:       'Trocar idioma',
+      credits_hu_translation: 'Tradução para húngaro:',
       credits_by:       'Por',
       credits_brand:    'Eu Concego Jogar',
 
@@ -120,7 +121,8 @@ const I18n = (() => {
       btn_start:        'Start fishing',
       btn_instructions: 'How to play',
       hint:             'Hold your phone upright to play',
-      btn_change_lang:  'Change language',
+      btn_change_lang:       'Change language',
+      credits_hu_translation: 'Hungarian translation:',
       credits_by:       'By',
       credits_brand:    'Eu Concego Jogar',
 
@@ -220,7 +222,8 @@ const I18n = (() => {
       btn_start:        'Kezdj el horgászni',
       btn_instructions: 'Hogyan kell játszani',
       hint:             'A játékhoz tartsd a telefont függőlegesen',
-      btn_change_lang:  'Nyelv módosítása',
+      btn_change_lang:       'Nyelv módosítása',
+      credits_hu_translation: 'Magyar fordítás:',
       credits_by:       'By',
       credits_brand:    'Eu Concego Jogar',
 
@@ -334,6 +337,7 @@ const I18n = (() => {
 
   return { setLang, getLang, t };
 })();
+
 
 
 
