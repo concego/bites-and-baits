@@ -143,6 +143,10 @@ const Game = (() => {
     $('btn-start').addEventListener('click', startGame);
     $('btn-instructions').addEventListener('click', () => showScreen('instructions'));
     $('btn-back').addEventListener('click',  () => showScreen('start'));
+    $('btn-change-lang').addEventListener('click', () => {
+      localStorage.removeItem('bb_lang');
+      showScreen('lang');
+    });
     $('btn-menu').addEventListener('click',  () => goToMenu());
     $('btn-menu2').addEventListener('click', () => goToMenu());
     $('btn-continue').addEventListener('click', () => {
@@ -641,4 +645,5 @@ const Game = (() => {
 
   return { state: () => state };
 })();
+
 
