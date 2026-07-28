@@ -137,6 +137,7 @@ const Game = (() => {
 
     $('btn-lang-pt').addEventListener('click', () => selectLang('pt'));
     $('btn-lang-en').addEventListener('click', () => selectLang('en'));
+    $('btn-lang-hu').addEventListener('click', () => selectLang('hu'));
 
     // ── Botões ─────────────────────────────────────────────────────────────
     $('btn-start').addEventListener('click', startGame);
@@ -640,3 +641,4 @@ const Game = (() => {
 
   return { state: () => state };
 })();
+
